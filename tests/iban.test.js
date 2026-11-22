@@ -1,5 +1,5 @@
 describe('iban', () => {
-  const { normalizeIban, isValidIban, formatIban, countryOf, isSepaCountry } = Woodgrove.iban;
+  const { normalizeIban, isValidIban, formatIban, countryOf, isSepaCountry, maskIban } = Woodgrove.iban;
 
   test('normalizeIban removes spaces and uses capital letters', () => {
     expect(normalizeIban('nl91 abna 0417 1643 00')).toBe('NL91ABNA0417164300');
@@ -67,5 +67,15 @@ describe('iban', () => {
     expect(isSepaCountry('NL')).toBe(true);
     expect(isSepaCountry('ch')).toBe(true);
     expect(isSepaCountry('TR')).toBe(false);
+  });
+
+  test('maskIban keeps the country code and the last four characters', () => {
+    expect(maskIban('NL91ABNA0417164300')).toBe('NL************4300');
+    expect(maskIban('fr76 3000 6000 0112 3456 7890 189')).toBe('FR*********************0189');
+  });
+
+  test('maskIban returns an empty string for empty input', () => {
+    expect(maskIban('')).toBe('');
+    expect(maskIban(null)).toBe('');
   });
 });
