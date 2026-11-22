@@ -89,19 +89,38 @@
     $('result-id').textContent = result.id;
     $('result-amount').textContent = Number.isInteger(result.amountCents) ? money.formatAmount(result.amountCents) : '€ –';
 
-    $('result-summary').innerHTML = `
-      <dt>To</dt><dd>${result.beneficiaryName || '–'}<br><span class="mono">${iban.formatIban(result.toIban) || '–'}</span></dd>
-      <dt>From</dt><dd class="mono">${iban.formatIban(result.fromIban)}</dd>
-      <dt>Description</dt><dd>${result.description || '–'}</dd>
-      <dt>Speed</dt><dd>${result.instant ? 'Instant' : 'Standard (next business day)'}</dd>
-      <dt>Fee</dt><dd>${money.formatAmount(result.feeCents)}</dd>
-      <dt>Created</dt><dd>${new Date(result.createdAt).toLocaleString('en-GB')}</dd>`;
+    // Build the DOM with textContent only: names and descriptions are user input (WGB-103).
+    const summary = $('result-summary');
+    summary.replaceChildren();
+    const addRow = (label, value, className) => {
+      const dd = el('dd', value, className);
+      summary.append(el('dt', label), dd);
+      return dd;
+    };
+    const to = addRow('To', result.beneficiaryName || '–');
+    to.append(document.createElement('br'), el('span', iban.formatIban(result.toIban) || '–', 'mono'));
+    addRow('From', iban.formatIban(result.fromIban), 'mono');
+    addRow('Description', result.description || '–');
+    addRow('Speed', result.instant ? 'Instant' : 'Standard (next business day)');
+    addRow('Fee', money.formatAmount(result.feeCents));
+    addRow('Created', new Date(result.createdAt).toLocaleString('en-GB'));
 
-    $('result-errors').innerHTML = result.errors
-      .map((error) => `<li><strong>${error.code}</strong> ${error.message}</li>`)
-      .join('');
+    $('result-errors').replaceChildren(
+      ...result.errors.map((error) => {
+        const item = el('li', ` ${error.message}`);
+        item.prepend(el('strong', error.code));
+        return item;
+      })
+    );
 
     $('result-json').textContent = JSON.stringify(result, null, 2);
+  }
+
+  function el(tag, text, className) {
+    const node = document.createElement(tag);
+    if (text !== undefined) node.textContent = text;
+    if (className) node.className = className;
+    return node;
   }
 
   form.addEventListener('submit', (event) => {
