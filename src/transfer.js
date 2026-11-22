@@ -35,7 +35,7 @@
       fail('NON_SEPA_COUNTRY', 'Transfers are only possible to accounts in the SEPA area.');
     }
 
-    if (request.fromIban && request.fromIban === request.toIban) {
+    if (request.fromIban && iban.normalizeIban(request.fromIban) === iban.normalizeIban(request.toIban)) {
       fail('SAME_ACCOUNT', 'You cannot transfer money to the account it comes from.');
     }
 

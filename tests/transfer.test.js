@@ -35,6 +35,27 @@ describe('transfer', () => {
     expect(codesOf(request)).toEqual(['SAME_ACCOUNT']);
   });
 
+  test('rejects the same account written with spaces or lowercase letters', () => {
+    const request = { ...validRequest(), toIban: 'nl20 wgbk 0123 4567 89' };
+    expect(codesOf(request)).toEqual(['SAME_ACCOUNT']);
+  });
+
+  test('rejects an invalid account to pay from', () => {
+    expect(codesOf({ ...validRequest(), fromIban: 'NL21WGBK0123456789' })).toEqual(['INVALID_FROM_IBAN']);
+  });
+
+  test('rejects beneficiaries outside the SEPA area', () => {
+    expect(codesOf({ ...validRequest(), toIban: 'TR330006100519786457841326' })).toEqual(['NON_SEPA_COUNTRY']);
+  });
+
+  test('accepts exactly € 25.000,00 and a description of exactly 140 characters', () => {
+    expect(codesOf({ ...validRequest(), amountCents: 2500000, description: 'x'.repeat(140) })).toEqual([]);
+  });
+
+  test('rejects a description longer than 140 characters', () => {
+    expect(codesOf({ ...validRequest(), description: 'x'.repeat(141) })).toEqual(['DESCRIPTION_TOO_LONG']);
+  });
+
   test('requires a beneficiary name', () => {
     expect(codesOf({ ...validRequest(), beneficiaryName: '' })).toEqual(['MISSING_BENEFICIARY_NAME']);
     expect(codesOf({ ...validRequest(), beneficiaryName: '   ' })).toEqual(['MISSING_BENEFICIARY_NAME']);
