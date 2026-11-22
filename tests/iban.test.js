@@ -27,6 +27,17 @@ describe('iban', () => {
     expect(isValidIban('nl91 abna 0417 1643 00')).toBe(true);
   });
 
+  // WGB-101: long IBANs overflowed Number.MAX_SAFE_INTEGER during the mod-97 check.
+  test('isValidIban accepts long French and Italian IBANs (WGB-101)', () => {
+    expect(isValidIban('FR14 2004 1010 0505 0001 3M02 606')).toBe(true);
+    expect(isValidIban('IT21 A030 6909 6061 0000 0063 789')).toBe(true);
+  });
+
+  test('isValidIban still rejects long IBANs with wrong check digits (WGB-101)', () => {
+    expect(isValidIban('FR15 2004 1010 0505 0001 3M02 606')).toBe(false);
+    expect(isValidIban('IT22 A030 6909 6061 0000 0063 789')).toBe(false);
+  });
+
   test('isValidIban rejects wrong check digits', () => {
     expect(isValidIban('NL92ABNA0417164300')).toBe(false);
     expect(isValidIban('DE88370400440532013000')).toBe(false);

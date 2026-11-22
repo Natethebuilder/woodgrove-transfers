@@ -58,10 +58,11 @@
     const rearranged = iban.slice(4) + iban.slice(0, 4);
     const digits = rearranged.replace(/[A-Z]/g, (letter) => String(letter.charCodeAt(0) - 55));
 
-    // Read 15 digits at a time to keep this fast.
+    // Read 7 digits at a time: a 2-digit remainder plus 7 digits stays far below
+    // Number.MAX_SAFE_INTEGER, so the arithmetic is exact for IBANs of any length.
     let remainder = 0;
-    for (let i = 0; i < digits.length; i += 15) {
-      const chunk = digits.slice(i, i + 15);
+    for (let i = 0; i < digits.length; i += 7) {
+      const chunk = digits.slice(i, i + 7);
       remainder = Number(String(remainder) + chunk) % 97;
     }
 
