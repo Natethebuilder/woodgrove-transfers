@@ -1,0 +1,13 @@
+{
+  "name": "woodgrove-transfers",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Woodgrove Transfers: a small payment transfer and IBAN validation service for the GitHub Copilot hands-on lab. Fictional bank, fake data.",
+  "scripts": {
+    "test": "node tests/run.js",
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Woodgrove Transfers",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:24",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": { "label": "Woodgrove Transfers API and console" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["GitHub.copilot-chat"]
+    }
+  }
+}
