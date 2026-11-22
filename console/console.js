@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const { iban, money, transfer, accounts } = window.Woodgrove;
+  const { iban, money, transfer, accounts, payee } = window.Woodgrove;
   const $ = (id) => document.getElementById(id);
 
   const form = $('transfer-form');
@@ -78,6 +78,26 @@
     $('description-count').textContent = `${fields.description.value.length} / 140`;
   }
 
+  // Verification of Payee (WGB-102): check the name against the account while the customer types.
+  const PAYEE_MESSAGES = {
+    MATCH: () => '✅ Name matches',
+    CLOSE_MATCH: (check) => `⚠️ Did you mean ${check.suggestedName}?`,
+    NO_MATCH: () => "❌ Name doesn't match this account",
+    NOT_POSSIBLE: () => 'ℹ️ Name check not possible for this bank',
+  };
+
+  function updatePayeeCheck() {
+    const hint = $('name-hint');
+    if (!fields.beneficiaryName.value.trim() || !iban.isValidIban(fields.toIban.value)) {
+      hint.className = 'hint';
+      hint.textContent = "The name on the beneficiary's account.";
+      return;
+    }
+    const check = payee.verifyPayee(fields.toIban.value, fields.beneficiaryName.value);
+    hint.className = `hint vop ${check.result.toLowerCase().replace('_', '-')}`;
+    hint.textContent = PAYEE_MESSAGES[check.result](check);
+  }
+
   function render(result) {
     $('result-empty').hidden = true;
     $('result-body').hidden = false;
@@ -137,10 +157,13 @@
       updateIbanHint();
       updateAmountHint();
       updateDescriptionCount();
+      updatePayeeCheck();
     });
   });
 
   fields.toIban.addEventListener('input', updateIbanHint);
+  fields.toIban.addEventListener('input', updatePayeeCheck);
+  fields.beneficiaryName.addEventListener('input', updatePayeeCheck);
   fields.amount.addEventListener('input', updateAmountHint);
   fields.instant.addEventListener('change', updateFeeHint);
   updateFeeHint();
