@@ -18,6 +18,11 @@
       maxDescriptionLength: 140,
     }),
 
+    // Instant transfer fee: 0.1% of the amount, between € 0,20 and € 2,50 (WGB-104).
+    fees: Object.freeze({
+      instant: Object.freeze({ minCents: 20, maxCents: 250 }),
+    }),
+
     // Sanctions screening service, called by the nightly screening job.
     screening: Object.freeze({
       url: 'https://screening.woodgrove.example/v2/check',
