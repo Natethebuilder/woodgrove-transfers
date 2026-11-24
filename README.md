@@ -9,12 +9,22 @@
 
 ## Get started
 
-You need **VS Code**, **Git** and a **GitHub Copilot** sign-in. Nothing else to install: there are no dependencies and no build step.
+You need **VS Code**, **Git** and a **GitHub Copilot** sign-in. The project has no dependencies and no build step.
 
-1. At the top of this page, select **Use this template** → **Create a new repository**.
-2. Choose yourself (or your team's sandbox organisation) as owner, select **Private**, then **Create repository**.
-3. In VS Code, open the Command Palette (<kbd>Ctrl+Shift+P</kbd> / <kbd>⇧⌘P</kbd>) → **Git: Clone** → paste the URL of your new repository.
-4. Open the folder and select **Trust** when VS Code asks.
+1. **Install Node.js (includes npm).** In a terminal, run `node -v`. Version 18 or later is fine. If you don't have it, install the LTS version from https://nodejs.org/en/download (or from your company's software portal). Then quit and reopen VS Code, so its terminal finds Node. Can't install software? Skip this step: the tests also run in a browser.
+2. **Make your own copy.** At the top of this page, select **Use this template** → **Create a new repository**. Choose yourself (or your team's sandbox organisation) as owner, select **Private**, then **Create repository**.
+3. **Clone it into VS Code.** Open the Command Palette (<kbd>Ctrl+Shift+P</kbd> / <kbd>⇧⌘P</kbd>) → **Git: Clone** → **Clone from GitHub** (sign in if VS Code asks) → pick your copy. You can also paste the HTTPS URL from the green **Code** button on your copy. Choose a folder and select **Open**. If VS Code asks whether you trust the folder, select **Manage** → **Trust**.
+   First time using Git on this laptop? Set your name and email once:
+   ```bash
+   git config --global user.name "Your Name"
+   git config --global user.email "you@example.com"
+   ```
+4. **Install and run the tests.** Open the terminal (<kbd>Ctrl+&#96;</kbd> / <kbd>⌃&#96;</kbd>, or **Terminal** → **New Terminal**) and run:
+   ```bash
+   npm install
+   npm test
+   ```
+   You should see **✓ 30 passed**. Windows says running scripts is disabled? Run `node tests/run.js` (or `npm.cmd test`) instead. No Node.js? Open `tests/index.html` in a browser.
 
 No VS Code on your machine? Open your copy on github.com and select **Code** → **Codespaces** → **Create codespace**.
 
@@ -24,7 +34,7 @@ Choose whichever works on your machine. Both run the same tests.
 
 | With Node.js (18 or later) | Without Node.js |
 |---|---|
-| `node tests/run.js` (or `npm test`) in the terminal | Open `tests/index.html` in a browser, or in the VS Code integrated browser |
+| `npm test` in the terminal (or `node tests/run.js`) | Open `tests/index.html` in a browser, or in the VS Code integrated browser |
 
 The browser tab title shows the result, for example `✓ 30 passed` or `✗ 1 failed`.
 
