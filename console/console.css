@@ -68,6 +68,11 @@ form { display: grid; gap: 16px; margin-top: 14px; }
 .hint { font-size: 12.5px; color: var(--muted); min-height: 1.2em; }
 .hint.ok { color: var(--ok); }
 .hint.warn { color: #9a6700; }
+.hint.vop { justify-self: start; padding: 4px 10px; border-radius: 999px; font-weight: 500; }
+.hint.vop.match { background: var(--ok-bg); color: var(--ok); }
+.hint.vop.close-match { background: #fff4d6; color: #7a5200; }
+.hint.vop.no-match { background: var(--bad-bg); color: var(--bad); }
+.hint.vop.not-possible { background: #eef1f0; color: var(--muted); }
 
 .amount-input { position: relative; display: block; }
 .amount-input > span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }

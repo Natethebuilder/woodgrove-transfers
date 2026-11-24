@@ -58,10 +58,11 @@
     const rearranged = iban.slice(4) + iban.slice(0, 4);
     const digits = rearranged.replace(/[A-Z]/g, (letter) => String(letter.charCodeAt(0) - 55));
 
-    // Read 15 digits at a time to keep this fast.
+    // Read 7 digits at a time: a 2-digit remainder plus 7 digits stays far below
+    // Number.MAX_SAFE_INTEGER, so the arithmetic is exact for IBANs of any length.
     let remainder = 0;
-    for (let i = 0; i < digits.length; i += 15) {
-      const chunk = digits.slice(i, i + 15);
+    for (let i = 0; i < digits.length; i += 7) {
+      const chunk = digits.slice(i, i + 7);
       remainder = Number(String(remainder) + chunk) % 97;
     }
 
@@ -74,11 +75,21 @@
     return iban.replace(/(.{4})(?=.)/g, '$1 ');
   }
 
+  // Mask an IBAN for logs: keep the country code and the last four characters
+  /** "NL91 ABNA 0417 1643 00" → "NL************4300". Returns an empty string for empty input. */
+  function maskIban(value) {
+    const iban = normalizeIban(value);
+    if (!iban) return '';
+    if (iban.length <= 6) return '*'.repeat(iban.length);
+    return iban.slice(0, 2) + '*'.repeat(iban.length - 6) + iban.slice(-4);
+  }
+
   return {
     normalizeIban,
     isValidIban,
     formatIban,
     countryOf,
     isSepaCountry,
+    maskIban,
   };
 });

@@ -13,10 +13,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const iban = require('./src/iban');
-const { createTransfer } = require('./src/transfer');
+const transfers = require('./src/transfer');
 
 const PORT = Number(process.env.PORT) || 3000;
 const ROOT = __dirname;
+const MAX_BODY_BYTES = 100 * 1024;
 
 // Static files: the console, plus the data/ and src/ files it loads with <script> tags.
 const STATIC_DIRS = { '/': 'console', '/data/': 'data', '/src/': 'src' };
@@ -35,13 +36,31 @@ function sendError(res, status, code, message) {
   sendJson(res, status, { error: { code, message } });
 }
 
+class HttpError extends Error {
+  constructor(status, code, message) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
+}
+
+/** Read the request body, but stop at MAX_BODY_BYTES (WGB-103). */
 function readBody(req) {
   return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', (chunk) => {
-      body += chunk;
-    });
-    req.on('end', () => resolve(body));
+    const chunks = [];
+    let size = 0;
+    const onData = (chunk) => {
+      size += chunk.length;
+      if (size > MAX_BODY_BYTES) {
+        req.off('data', onData);
+        req.resume(); // discard the rest of the body
+        reject(new HttpError(413, 'PAYLOAD_TOO_LARGE', 'The request body is larger than 100 KB.'));
+        return;
+      }
+      chunks.push(chunk);
+    };
+    req.on('data', onData);
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
     req.on('error', reject);
   });
 }
@@ -68,7 +87,12 @@ async function handle(req, res) {
   }
 
   if (req.method === 'GET' && pathname.startsWith('/ibans/')) {
-    const value = decodeURIComponent(pathname.slice('/ibans/'.length));
+    let value;
+    try {
+      value = decodeURIComponent(pathname.slice('/ibans/'.length));
+    } catch (error) {
+      return sendError(res, 400, 'INVALID_REQUEST', 'The IBAN in the URL is not encoded correctly.');
+    }
     const country = iban.countryOf(value);
     return sendJson(res, 200, {
       iban: iban.normalizeIban(value),
@@ -83,13 +107,14 @@ async function handle(req, res) {
     if (req.method !== 'POST') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Use POST to create a transfer.');
 
     let request;
+    const body = await readBody(req);
     try {
-      request = JSON.parse(await readBody(req));
+      request = JSON.parse(body);
     } catch (error) {
       return sendError(res, 400, 'INVALID_JSON', 'The request body must be a JSON transfer request.');
     }
 
-    const transfer = createTransfer(request);
+    const transfer = transfers.createTransfer(request);
     return sendJson(res, transfer.status === 'ACCEPTED' ? 201 : 422, transfer);
   }
 
@@ -100,8 +125,13 @@ async function handle(req, res) {
 
 const server = http.createServer((req, res) => {
   handle(req, res).catch((err) => {
+    if (err instanceof HttpError) {
+      res.setHeader('Connection', 'close');
+      return sendError(res, err.status, err.code, err.message);
+    }
+    // Log the details for the team, but never send stack traces to clients (WGB-103).
     console.error(err);
-    sendJson(res, 500, { error: { code: 'INTERNAL_ERROR', message: err.message, stack: err.stack } });
+    sendError(res, 500, 'INTERNAL_ERROR', 'Something went wrong on our side. Please try again later.');
   });
 });
 

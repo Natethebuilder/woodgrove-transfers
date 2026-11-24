@@ -1,5 +1,5 @@
 describe('transfer', () => {
-  const { validateTransfer, createTransfer } = Woodgrove.transfer;
+  const { validateTransfer, createTransfer, calculateFee } = Woodgrove.transfer;
 
   const validRequest = () => ({
     fromIban: 'NL20WGBK0123456789',
@@ -33,6 +33,27 @@ describe('transfer', () => {
   test('rejects a transfer to the same account', () => {
     const request = { ...validRequest(), toIban: 'NL20WGBK0123456789' };
     expect(codesOf(request)).toEqual(['SAME_ACCOUNT']);
+  });
+
+  test('rejects the same account written with spaces or lowercase letters', () => {
+    const request = { ...validRequest(), toIban: 'nl20 wgbk 0123 4567 89' };
+    expect(codesOf(request)).toEqual(['SAME_ACCOUNT']);
+  });
+
+  test('rejects an invalid account to pay from', () => {
+    expect(codesOf({ ...validRequest(), fromIban: 'NL21WGBK0123456789' })).toEqual(['INVALID_FROM_IBAN']);
+  });
+
+  test('rejects beneficiaries outside the SEPA area', () => {
+    expect(codesOf({ ...validRequest(), toIban: 'TR330006100519786457841326' })).toEqual(['NON_SEPA_COUNTRY']);
+  });
+
+  test('accepts exactly € 25.000,00 and a description of exactly 140 characters', () => {
+    expect(codesOf({ ...validRequest(), amountCents: 2500000, description: 'x'.repeat(140) })).toEqual([]);
+  });
+
+  test('rejects a description longer than 140 characters', () => {
+    expect(codesOf({ ...validRequest(), description: 'x'.repeat(141) })).toEqual(['DESCRIPTION_TOO_LONG']);
   });
 
   test('requires a beneficiary name', () => {
@@ -74,5 +95,50 @@ describe('transfer', () => {
     const transfer = createTransfer({ ...validRequest(), amountCents: 0 });
     expect(transfer.status).toBe('REJECTED');
     expect(transfer.errors.map((error) => error.code)).toEqual(['INVALID_AMOUNT']);
+  });
+
+  describe('instant fee (WGB-104)', () => {
+    const feeFor = (amountCents, instant) => createTransfer({ ...validRequest(), amountCents, instant }).feeCents;
+
+    test('€ 100,00 instant costs the minimum of € 0,20', () => {
+      expect(feeFor(10000, true)).toBe(20);
+    });
+
+    test('€ 1.234,56 instant costs € 1,23', () => {
+      expect(feeFor(123456, true)).toBe(123);
+    });
+
+    test('€ 10.000,00 instant costs the maximum of € 2,50', () => {
+      expect(feeFor(1000000, true)).toBe(250);
+    });
+
+    test('standard transfers are free', () => {
+      expect(feeFor(50000, false)).toBe(0);
+    });
+
+    test('rounds half up to whole cents', () => {
+      expect(calculateFee(123500, true)).toBe(124);
+      expect(calculateFee(123499, true)).toBe(123);
+    });
+
+    test('an invalid amount has no fee', () => {
+      expect(calculateFee(0, true)).toBe(0);
+      expect(calculateFee(Number.NaN, true)).toBe(0);
+    });
+  });
+
+  test('createTransfer logs masked IBANs and no names', () => {
+    const logs = [];
+    const originalLog = console.log;
+    console.log = (line) => logs.push(line);
+    try {
+      createTransfer(validRequest());
+    } finally {
+      console.log = originalLog;
+    }
+    const output = logs.join('\n');
+    expect(output).toContain('NL************6789');
+    expect(output).not.toContain('NL20WGBK0123456789');
+    expect(output).not.toContain('Claire Dubois');
   });
 });

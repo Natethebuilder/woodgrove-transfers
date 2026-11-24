@@ -1,5 +1,5 @@
 describe('iban', () => {
-  const { normalizeIban, isValidIban, formatIban, countryOf, isSepaCountry } = Woodgrove.iban;
+  const { normalizeIban, isValidIban, formatIban, countryOf, isSepaCountry, maskIban } = Woodgrove.iban;
 
   test('normalizeIban removes spaces and uses capital letters', () => {
     expect(normalizeIban('nl91 abna 0417 1643 00')).toBe('NL91ABNA0417164300');
@@ -25,6 +25,17 @@ describe('iban', () => {
 
   test('isValidIban accepts spaces and lowercase letters', () => {
     expect(isValidIban('nl91 abna 0417 1643 00')).toBe(true);
+  });
+
+  // WGB-101: long IBANs overflowed Number.MAX_SAFE_INTEGER during the mod-97 check.
+  test('isValidIban accepts long French and Italian IBANs (WGB-101)', () => {
+    expect(isValidIban('FR14 2004 1010 0505 0001 3M02 606')).toBe(true);
+    expect(isValidIban('IT21 A030 6909 6061 0000 0063 789')).toBe(true);
+  });
+
+  test('isValidIban still rejects long IBANs with wrong check digits (WGB-101)', () => {
+    expect(isValidIban('FR15 2004 1010 0505 0001 3M02 606')).toBe(false);
+    expect(isValidIban('IT22 A030 6909 6061 0000 0063 789')).toBe(false);
   });
 
   test('isValidIban rejects wrong check digits', () => {
@@ -67,5 +78,15 @@ describe('iban', () => {
     expect(isSepaCountry('NL')).toBe(true);
     expect(isSepaCountry('ch')).toBe(true);
     expect(isSepaCountry('TR')).toBe(false);
+  });
+
+  test('maskIban keeps the country code and the last four characters', () => {
+    expect(maskIban('NL91ABNA0417164300')).toBe('NL************4300');
+    expect(maskIban('fr76 3000 6000 0112 3456 7890 189')).toBe('FR*********************0189');
+  });
+
+  test('maskIban returns an empty string for empty input', () => {
+    expect(maskIban('')).toBe('');
+    expect(maskIban(null)).toBe('');
   });
 });
